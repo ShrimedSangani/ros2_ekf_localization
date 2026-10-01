@@ -22,6 +22,12 @@
   <img src="results/ekf_pipeline.png" width="550">
 </p>
 
+## Project Flow
+
+<p align="center">
+  <img src="results/flowchart.png" width="600">
+</p>
+
 ## Results
 
 - Recorded the trajectories using **ROS bags** and evaluated localization error using **Absolute Pose Error (APE)** with `evo`.
