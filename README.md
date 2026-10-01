@@ -51,12 +51,14 @@
 
 ### Trajectory Comparison
 
-<p align="center">
-  <b>Black:</b> Reference Odometry &nbsp; | &nbsp;
-  <b>Green:</b> Noisy Odometry &nbsp; | &nbsp;
-  <b>Red:</b> Custom EKF &nbsp; | &nbsp;
-  <b>Yellow:</b> robot_localization
-</p>
+<table align="center">
+  <tr>
+    <td><b>Black:</b> Reference Odometry</td>
+    <td><b>Green:</b> Noisy Odometry</td>
+    <td><b>Red:</b> Custom EKF</td>
+    <td><b>Yellow:</b> robot_localization</td>
+  </tr>
+</table>
 
 <p align="center">
   <img src="results/trajectory_comparision.png" width=550">
