@@ -1,280 +1,74 @@
-# ROS 2 Extended Kalman Filter Localization
+# ROS 2 EKF Localization
 
-A from-scratch Extended Kalman Filter (EKF) for 2D TurtleBot3 localization using ROS 2 and Gazebo. The filter fuses noisy wheel-odometry information with IMU yaw measurements to estimate the robot state:
+I implemented an **Extended Kalman Filter (EKF) from scratch** for 2D TurtleBot3 localization using ROS 2 and Gazebo. The goal was to take noisy odometry and IMU measurements and estimate a more accurate robot trajectory.
 
-\[
-\mathbf{x} = [x,\ y,\ \theta]^T
-\]
+## Implementation
 
-The project includes synthetic sensor-noise injection, a custom EKF implementation, trajectory evaluation using `evo`, and a comparison against the ROS 2 `robot_localization` EKF.
+I simulated a TurtleBot3 Burger in Gazebo and drove it around the environment using ROS 2. Gazebo provides the robot's odometry through `/odom` and IMU measurements through `/imu`.
+
+![TurtleBot3 Gazebo Simulation](results/gazebo_simulation.png)
+
+To simulate imperfect sensors, I created a ROS 2 wrapper that adds Gaussian noise to the Gazebo measurements. The wrapper takes `/odom` and `/imu` and publishes the corrupted measurements as `/odom_noisy` and `/imu_noisy`.
+
+I then implemented the EKF using a 2D state:
+
+`[x, y, θ]`
+
+The prediction step uses the robot's linear and angular velocity with a nonlinear velocity motion model. The correction step fuses the noisy odometry position `(x, y)` with IMU yaw `θ`. The final estimate is published as `/ekf/pose`.
+
+For comparison, I also ran the same noisy sensor data through the ROS 2 `robot_localization` EKF.
+
+```text
+Gazebo TurtleBot3
+   │
+   ├── /odom ──┐
+   └── /imu  ──┤
+               ▼
+        Noise Wrapper
+         │          │
+  /odom_noisy   /imu_noisy
+         │          │
+         └────┬─────┘
+              ▼
+          Custom EKF
+              │
+          /ekf/pose
+```
 
 ## Results
 
-The custom EKF reduced translation RMSE by approximately **36%** compared with the noisy odometry input.
+I recorded the trajectories using ROS bags and evaluated them using Absolute Pose Error (APE) with `evo`.
 
 | Method | Translation RMSE |
 |---|---:|
 | Noisy Odometry | 0.1412 m |
 | **Custom EKF** | **0.0903 m** |
-| ROS 2 `robot_localization` | 0.0669 m |
+| `robot_localization` | 0.0669 m |
 
-RMSE was calculated using Absolute Pose Error (APE) with SE(3) Umeyama alignment.
+The custom EKF reduced the translational RMSE from **14.1 cm to 9.0 cm**, an improvement of approximately **36%** over the noisy odometry.
 
 ### Trajectory Comparison
 
 ![Trajectory Comparison](results/trajectory_comparision.png)
 
-- **Black:** Gazebo `/odom` reference
-- **Green:** `/odom_noisy`
-- **Red:** Custom EKF `/ekf/pose`
-- **Yellow:** ROS 2 `robot_localization` `/odometry/filtered`
+**Black:** reference odometry · **Green:** noisy odometry · **Red:** custom EKF · **Yellow:** `robot_localization`
 
-The noisy odometry shows substantial position variation, while both EKF implementations produce smoother trajectories that more closely follow the reference.
+The noisy odometry has visible variation around the reference path, especially during turns. The custom EKF removes much of this noise and stays closer to the reference trajectory. The `robot_localization` estimate is smoother and achieved the lowest overall RMSE.
 
-### Position Estimates
+### Position Comparison
 
 ![Position Comparison](results/position_comparision.png)
 
-### Orientation Estimates
+The noisy `x` and `y` measurements fluctuate around the reference position throughout the run. After filtering, the custom EKF follows the overall position much more closely while removing a large amount of the measurement noise.
+
+### Orientation Comparison
 
 ![Orientation Comparison](results/orientation_comparision.png)
 
-The EKF is designed for planar localization, so yaw is the relevant orientation state.
+Since the EKF estimates planar motion, yaw is the orientation component I focused on. The filtered yaw follows the robot's orientation while reducing the noise introduced into the IMU measurements.
 
-## System Architecture
+## Final Results
 
-```text
-                    TurtleBot3 + Gazebo
-                           |
-                         /odom
-                           |
-                 Synthetic Noise Wrapper
-                    /             \
-             /odom_noisy       /imu_noisy
-                  |                 |
-          x, y, v, omega           yaw
-                  \                 /
-                   \               /
-                    Custom EKF
-                        |
-                    /ekf/pose
-                        |
-                 evo Evaluation
-```
+The project gave me a complete ROS 2 sensor-fusion pipeline: **Gazebo simulation → synthetic sensor noise → EKF prediction and correction → ROS 2 pose estimate → quantitative trajectory evaluation**.
 
-The original Gazebo `/odom` topic is not consumed by the custom EKF and is retained as a reference trajectory for evaluation.
-
-## Extended Kalman Filter
-
-### Prediction
-
-The control input is
-
-\[
-\mathbf{u} = [v,\ \omega]^T
-\]
-
-where \(v\) is linear velocity and \(\omega\) is angular velocity.
-
-For nonzero angular velocity, the nonlinear velocity motion model is
-
-\[
-x' = x - \frac{v}{\omega}\sin(\theta)
-     + \frac{v}{\omega}\sin(\theta+\omega\Delta t)
-\]
-
-\[
-y' = y + \frac{v}{\omega}\cos(\theta)
-     - \frac{v}{\omega}\cos(\theta+\omega\Delta t)
-\]
-
-\[
-\theta' = \theta+\omega\Delta t
-\]
-
-The covariance prediction is
-
-\[
-\Sigma' = G\Sigma G^T + R
-\]
-
-where \(G\) is the Jacobian of the nonlinear motion model and \(R\) is the process-noise covariance.
-
-A separate straight-line model is used when angular velocity approaches zero to avoid division by zero.
-
-### Measurement Update
-
-The measurement vector is
-
-\[
-\mathbf{z} =
-\begin{bmatrix}
-x_{\text{odom}} \\
-y_{\text{odom}} \\
-\theta_{\text{imu}}
-\end{bmatrix}
-\]
-
-Since the measurements directly observe the three state variables,
-
-\[
-h(\mathbf{x}) = \mathbf{x}
-\]
-
-and therefore
-
-\[
-H = I_{3\times3}
-\]
-
-The Kalman gain is
-
-\[
-K = \Sigma'H^T(H\Sigma'H^T + Q)^{-1}
-\]
-
-followed by
-
-\[
-\mu = \mu' + K(\mathbf{z}-h(\mu'))
-\]
-
-\[
-\Sigma = (I-KH)\Sigma'
-\]
-
-where \(Q\) represents measurement-noise covariance.
-
-## ROS 2 Topics
-
-| Topic | Type | Purpose |
-|---|---|---|
-| `/odom` | `nav_msgs/Odometry` | Gazebo reference trajectory |
-| `/odom_noisy` | `nav_msgs/Odometry` | Synthetic noisy odometry |
-| `/imu_noisy` | `sensor_msgs/Imu` | Synthetic noisy IMU |
-| `/ekf/pose` | `geometry_msgs/PoseWithCovarianceStamped` | Custom EKF estimate |
-| `/odometry/filtered` | `nav_msgs/Odometry` | `robot_localization` estimate |
-
-## Project Structure
-
-```text
-ekf_localization/
-├── config/
-│   └── ekf.yaml
-├── ekf_localization/
-│   ├── __init__.py
-│   ├── ekf_node.py
-│   └── synthetic_noise_wrapper.py
-├── results/
-│   ├── trajectory_comparision.png
-│   ├── position_comparision.png
-│   ├── orientation_comparision.png
-│   └── velocity_comparision.png
-├── resource/
-│   └── ekf_localization
-├── test/
-├── package.xml
-├── setup.cfg
-├── setup.py
-└── README.md
-```
-
-## Requirements
-
-- Ubuntu 22.04
-- ROS 2 Humble
-- TurtleBot3
-- Gazebo Classic
-- Python 3
-- NumPy
-- `robot_localization`
-- `evo`
-
-## Build
-
-Clone the repository into the `src` directory of a ROS 2 workspace and build it:
-
-```bash
-cd ~/ros2_ws/src
-git clone <repository-url>
-cd ..
-
-source /opt/ros/humble/setup.bash
-colcon build --symlink-install
-
-source install/setup.bash
-```
-
-## Run
-
-Start the TurtleBot3 Gazebo simulation:
-
-```bash
-export TURTLEBOT3_MODEL=burger
-ros2 launch turtlebot3_gazebo turtlebot3_world.launch.py
-```
-
-Start the synthetic noise wrapper:
-
-```bash
-ros2 run ekf_localization wrapper
-```
-
-Start the custom EKF:
-
-```bash
-ros2 run ekf_localization ekf_node --ros-args -p use_sim_time:=true
-```
-
-The custom estimate is published to:
-
-```text
-/ekf/pose
-```
-
-For comparison, `robot_localization` can be run using the provided configuration:
-
-```bash
-ros2 run robot_localization ekf_node \
-  --ros-args \
-  --params-file <path-to-ekf.yaml> \
-  -p use_sim_time:=true
-```
-
-## Evaluation
-
-Trajectories were recorded with:
-
-```bash
-ros2 bag record /odom /odom_noisy /ekf/pose /odometry/filtered
-```
-
-Absolute Pose Error was evaluated using `evo`:
-
-```bash
-evo_ape bag2 <bag> /odom /ekf/pose -a
-```
-
-The custom EKF achieved a translation RMSE of **0.0903 m**, compared with **0.1412 m** for noisy odometry.
-
-The filter was also run continuously for more than five minutes to check for numerical instability, NaNs, covariance divergence, or loss of pose output.
-
-## Key Takeaways
-
-This project demonstrates:
-
-- Nonlinear state estimation using an Extended Kalman Filter
-- Derivation and implementation of motion-model Jacobians
-- Prediction and measurement-correction steps implemented from scratch
-- Odometry and IMU sensor fusion
-- Quaternion-to-yaw conversion
-- Covariance propagation
-- ROS 2 publishers, subscribers, callbacks, and timers
-- Synthetic sensor-noise modeling
-- ROS bag data collection
-- Quantitative trajectory evaluation with APE/RMSE
-- Comparison with the production ROS 2 `robot_localization` package
-
-## License
-
-MIT
+The custom EKF improved localization accuracy substantially over the noisy sensor input, while the comparison with `robot_localization` gave me a useful baseline for validating my implementation.
