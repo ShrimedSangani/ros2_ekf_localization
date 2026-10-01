@@ -1,45 +1,32 @@
-# ROS 2 EKF Localization
+# ROS 2 EKF - Localization
 
 - Built a complete localization pipeline from **Gazebo simulation → synthetic sensor noise → EKF sensor fusion → ROS 2 pose estimation → quantitative evaluation**.
 - Implemented an **Extended Kalman Filter (EKF) from scratch** for 2D TurtleBot3 localization using **ROS 2 and Gazebo**.
 
 ## Implementation
 
-- Simulated a **TurtleBot3 Burger in Gazebo** and controlled the robot using ROS 2.
-- Used `/odom` and `/imu` as the original simulated sensor measurements.
-
 <p align="center">
-  <img src="results/gazebo_simulation.png" width="300">
+  <img src="results/gazebo_simulation.png" width="400">
 </p>
 
-- Developed a **ROS 2 noise wrapper** that adds Gaussian noise to the simulated sensor measurements and publishes `/odom_noisy` and `/imu_noisy`.
-- Used the state `[x, y, θ]`, where `x` and `y` represent position and `θ` represents the robot's heading.
-- Implemented the **EKF prediction step** using linear and angular velocity with a nonlinear velocity motion model and its Jacobian.
-- Implemented the **EKF correction step** by fusing noisy odometry position `(x, y)` with IMU yaw `θ`.
-- Published the final localization estimate to `/ekf/pose`.
-- Ran the same noisy sensor measurements through **ROS 2 `robot_localization`** for comparison.
+- Simulated a **TurtleBot3 Burger in Gazebo** and drove it around the environment using ROS 2.
+- Used the simulation's `/odom` and `/imu` topics as the original odometry and IMU measurements.
+- Developed a **synthetic noise wrapper** that adds Gaussian noise to `/odom` and `/imu` and publishes the corrupted measurements as `/odom_noisy` and `/imu_noisy`.
+- Implemented the EKF with the state `[x, y, θ]`, representing the robot's **2D position and heading**.
+- Used the robot's **linear and angular velocity** with a nonlinear velocity motion model for the EKF prediction step.
+- Fused noisy odometry position `(x, y)` with **IMU yaw `θ`** in the correction step.
+- Published the final EKF state estimate to `/ekf/pose`.
+- Passed the same noisy sensor measurements through ROS 2 **`robot_localization`** to compare its performance with my implementation.
 
-```text
-             Gazebo TurtleBot3
-                    │
-              /odom + /imu
-                    │
-                    ▼
-              Noise Wrapper
-               /         \
-        /odom_noisy    /imu_noisy
-               \         /
-                \       /
-                  ▼
-              Custom EKF
-                  │
-              /ekf/pose
-```
+<p align="center">
+  <img src="results/ekf_pipeline.png" width="550">
+</p>
 
 ## Results
 
-- Recorded the trajectories using **ROS bags** and evaluated them using **Absolute Pose Error (APE)** with `evo`.
-- Reduced localization error by approximately **36%** compared with the noisy odometry input and validated the implementation against **`robot_localization`**.
+- Recorded the trajectories using **ROS bags** and evaluated localization error using **Absolute Pose Error (APE)** with `evo`.
+- Reduced translational RMSE from **0.1412 m to 0.0903 m**, approximately a **36% reduction in error** compared with the noisy odometry input.
+- Compared the custom EKF against **`robot_localization`**, which achieved an RMSE of **0.0669 m**.
 
 <table align="center">
   <tr>
@@ -63,26 +50,34 @@
 ### Trajectory Comparison
 
 <p align="center">
-  <img src="results/trajectory_comparision.png" width="500">
+  <img src="results/trajectory_comparision.png" width=550">
 </p>
 
-- The **noisy odometry** shows noticeable variation from the reference trajectory, especially around turns.
-- The **custom EKF** stays closer to the reference trajectory, while **`robot_localization`** achieved the lowest overall translational error.
+<p align="center">
+  <b>Black:</b> Reference Odometry &nbsp; | &nbsp;
+  <b>Green:</b> Noisy Odometry &nbsp; | &nbsp;
+  <b>Red:</b> Custom EKF &nbsp; | &nbsp;
+  <b>Yellow:</b> robot_localization
+</p>
+
+- The **noisy odometry** moves noticeably away from the reference trajectory, particularly around turns.
+- The **custom EKF** removes much of this variation and keeps the estimated path closer to the reference.
+- **`robot_localization`** produced the lowest overall translational error and provided a useful baseline for validating my implementation.
 
 ### Position Comparison
 
 <p align="center">
-  <img src="results/position_comparision.png" width="500">
+  <img src="results/position_comparision.png" width="550">
 </p>
 
 - The noisy `x` and `y` measurements fluctuate around the reference position throughout the run.
-- After filtering, the **custom EKF** produces smoother position estimates that stay closer to the reference.
+- The **custom EKF** produces smoother position estimates and follows the reference position more closely.
 
 ### Orientation Comparison
 
 <p align="center">
-  <img src="results/orientation_comparision.png" width="500">
+  <img src="results/orientation_comparision.png" width="550">
 </p>
 
-- Since the EKF models **2D planar motion**, yaw `θ` is the orientation component used for localization.
-- The filtered yaw follows the robot's heading while reducing the noise introduced into the IMU measurements.
+- Since the EKF estimates **2D planar motion**, yaw `θ` is the orientation component used for localization.
+- The filtered estimate follows the robot's heading while reducing the noise introduced into the IMU measurements.
