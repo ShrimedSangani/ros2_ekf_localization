@@ -18,14 +18,10 @@
 - Published the final EKF state estimate to `/ekf/pose`.
 - Passed the same noisy sensor measurements through ROS 2 **`robot_localization`** to compare its performance with my implementation.
 
-<p align="center">
-  <img src="results/ekf_pipeline.png" width="550">
-</p>
-
 ## Project Flow
 
 <p align="center">
-  <img src="results/flowchart.png" width="600">
+  <img src="results/flowchart.png" width="400">
 </p>
 
 ## Results
