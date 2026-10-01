@@ -6,7 +6,7 @@
 ## Implementation
 
 <p align="center">
-  <img src="results/gazebo_simulation.png" width="400">
+  <img src="results/gazebo_simulation.png" width="300">
 </p>
 
 - Simulated a **TurtleBot3 Burger in Gazebo** and drove it around the environment using ROS 2.
@@ -53,12 +53,14 @@
   <img src="results/trajectory_comparision.png" width=550">
 </p>
 
-<p align="center">
-  <b>Black:</b> Reference Odometry &nbsp; | &nbsp;
-  <b>Green:</b> Noisy Odometry &nbsp; | &nbsp;
-  <b>Red:</b> Custom EKF &nbsp; | &nbsp;
-  <b>Yellow:</b> robot_localization
-</p>
+<table align="center">
+  <tr>
+    <td><b>Black:</b> Reference Odometry</td>
+    <td><b>Green:</b> Noisy Odometry</td>
+    <td><b>Red:</b> Custom EKF</td>
+    <td><b>Yellow:</b> robot_localization</td>
+  </tr>
+</table>
 
 - The **noisy odometry** moves noticeably away from the reference trajectory, particularly around turns.
 - The **custom EKF** removes much of this variation and keeps the estimated path closer to the reference.
