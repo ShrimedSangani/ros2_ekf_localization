@@ -21,7 +21,7 @@
 ## Project Flow
 
 <p align="center">
-  <img src="results/flowchart.png" width="400">
+  <img src="results/flowchart.png" width="600">
 </p>
 
 ## Results
@@ -51,18 +51,18 @@
 
 ### Trajectory Comparison
 
+<table align="center">
+  <tr>
+    <td><b>Black: Reference Odometry</b></td>
+    <td><b>Green: Noisy Odometry</b></td>
+    <td><b>Red: Custom EKF</b></td>
+    <td><b>Yellow: robot_localization</b></td>
+  </tr>
+</table>
+
 <p align="center">
   <img src="results/trajectory_comparision.png" width=550">
 </p>
-
-<table align="center">
-  <tr>
-    <td><b>Black:</b> Reference Odometry</td>
-    <td><b>Green:</b> Noisy Odometry</td>
-    <td><b>Red:</b> Custom EKF</td>
-    <td><b>Yellow:</b> robot_localization</td>
-  </tr>
-</table>
 
 - The **noisy odometry** moves noticeably away from the reference trajectory, particularly around turns.
 - The **custom EKF** removes much of this variation and keeps the estimated path closer to the reference.
