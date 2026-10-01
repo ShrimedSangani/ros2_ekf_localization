@@ -9,7 +9,7 @@
 - Used `/odom` and `/imu` as the original simulated sensor measurements.
 
 <p align="center">
-  <img src="results/gazebo_simulation.png" width="600">
+  <img src="results/gazebo_simulation.png" width="300">
 </p>
 
 - Developed a **ROS 2 noise wrapper** that adds Gaussian noise to the simulated sensor measurements and publishes `/odom_noisy` and `/imu_noisy`.
@@ -41,19 +41,30 @@
 - Recorded the trajectories using **ROS bags** and evaluated them using **Absolute Pose Error (APE)** with `evo`.
 - Reduced localization error by approximately **36%** compared with the noisy odometry input and validated the implementation against **`robot_localization`**.
 
-| Method | Translation RMSE |
-|---|---:|
-| Noisy Odometry | 0.1412 m |
-| **Custom EKF** | **0.0903 m** |
-| `robot_localization` | 0.0669 m |
+<table align="center">
+  <tr>
+    <th>Method</th>
+    <th>Translation RMSE</th>
+  </tr>
+  <tr>
+    <td>Noisy Odometry</td>
+    <td>0.1412 m</td>
+  </tr>
+  <tr>
+    <td><b>Custom EKF</b></td>
+    <td><b>0.0903 m</b></td>
+  </tr>
+  <tr>
+    <td>robot_localization</td>
+    <td>0.0669 m</td>
+  </tr>
+</table>
 
 ### Trajectory Comparison
 
 <p align="center">
-  <img src="results/trajectory_comparision.png" width="600">
+  <img src="results/trajectory_comparision.png" width="500">
 </p>
-
-**Black:** Reference odometry · **Green:** Noisy odometry · **Red:** Custom EKF · **Yellow:** `robot_localization`
 
 - The **noisy odometry** shows noticeable variation from the reference trajectory, especially around turns.
 - The **custom EKF** stays closer to the reference trajectory, while **`robot_localization`** achieved the lowest overall translational error.
@@ -61,7 +72,7 @@
 ### Position Comparison
 
 <p align="center">
-  <img src="results/position_comparision.png" width="600">
+  <img src="results/position_comparision.png" width="500">
 </p>
 
 - The noisy `x` and `y` measurements fluctuate around the reference position throughout the run.
@@ -70,7 +81,7 @@
 ### Orientation Comparison
 
 <p align="center">
-  <img src="results/orientation_comparision.png" width="600">
+  <img src="results/orientation_comparision.png" width="500">
 </p>
 
 - Since the EKF models **2D planar motion**, yaw `θ` is the orientation component used for localization.
