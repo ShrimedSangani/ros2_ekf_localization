@@ -22,7 +22,6 @@ from nav_msgs.msg import Odometry
 from sensor_msgs.msg import Imu
 from geometry_msgs.msg import PoseWithCovarianceStamped
 import numpy as np
-import matplotlib.pyplot as plt
 
 class ekf_node(Node):
     def __init__(self):
@@ -32,6 +31,9 @@ class ekf_node(Node):
         self.v = 0
         self.w = 0
         self.dt = 1/20
+        self.x_odom = None
+        self.y_odom = None
+        self.theta_imu = None
 
         # define uncertainty
         x_uncertainty = 0.1
