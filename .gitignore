@@ -1,0 +1,24 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+
+# ROS 2 / colcon
+build/
+install/
+log/
+
+# ROS bags
+rosbag2_*/
+*.db3
+*.mcap
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+
+# Temporary files
+*.swp
+*~
